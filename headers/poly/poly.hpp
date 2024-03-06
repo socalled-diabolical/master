@@ -4,29 +4,26 @@
 #include <complex>
 #include <boost/range/combine.hpp>
 #include <boost/foreach.hpp>
+#include <cmath>
 
 namespace math {
 namespace poly {
 
-
-template <typename T, typename std::enable_if<std::is_arithmetic<T>{}, bool>::type = true>
+template <typename T>
 class Polynomial {
-    std::list<std::complex<T>> _coef; 
-    // coefficients of an*x^n + an-1*x^n-1 + ... + a1*x + a0
-    
-    auto get_coef() {
-        return _coef;
-    }
-
-    const auto get_coef() const{
-        return _coef;
-    }
-
+    std::vector<T> _coef; 
+    // coefficients of an*x^n + an-1*x^n-1 + ... + a1*x + a0 from a0 to an 
   public:
-    
-    Polynomial(std::list<std::complex<T>> coef) : _coef{coef} {}
 
-    const std::list<std::complex<T>> get_coefs() const {
+    std::vector<T> get_coef() {
+        return _coef;
+    }
+
+    const std::vector<T> get_coef() const{
+        return _coef;
+    }
+
+    const std::vector<T> get_coefs() const {
         return _coef;
     }
 
@@ -36,9 +33,9 @@ class Polynomial {
 
     size_t get_power() const {
         size_t pow = _coef.size()-1;
-
-        std::complex<T> null(0, 0);
             
+        T null = 0;
+        
         auto it = _coef.begin();
         auto ite = _coef.end();
         for(; (it != ite) && (*it == null); ++it) {
@@ -49,13 +46,12 @@ class Polynomial {
     }
 
     void pad_to_size(const size_t& size) {
-        std::cout << "size = " << size << std::endl;
         if(size < _coef.size()) {
             throw std::logic_error("Trying to pad to size which is lower than the power of the polynomial");
         }
           
         for (int i = size-_coef.size(); i > 0; --i) {
-            _coef.emplace_front(0, 0);
+            _coef.emplace_back(0);
         }
     }
 
@@ -63,46 +59,85 @@ class Polynomial {
         std::cout << *this;
     }
   
-    Polynomial(std::list<T> coef) {
+    Polynomial(std::vector<T> coef) {
         for(auto&& x : coef) {
-            _coef.emplace_back(x, 0);
+            _coef.push_back(x);
         }
     }
 
-    Polynomial<T> operator+(Polynomial<T>& poly) {
-        std::list<std::complex<T>> sum_coefs;
+    Polynomial(const T& constant) {
+        _coef.push_back(constant);
+    }
 
-        size_t pow = poly.get_power();
-        size_t my_pow = get_power();
+    T operator()(const T& point) {
+        T sum = 0;
+        auto max_pow = get_power();
         
-        if(pow > my_pow) {
-            pad_to_size(pow + 1); 
-        }
-        else {
-            poly.pad_to_size(my_pow + 1);
-        }
+        auto it = _coef.begin();
+        auto ite = _coef.end();
+
+        T point_powered (1.0);
+        size_t power = 0; 
         
-        std::complex<T> first;
-        std::complex<T> second;
-
-        BOOST_FOREACH(boost::tie(first, second), boost::combine(poly._coef, _coef)) {
-            sum_coefs.push_back(first + second);
+        for(; it != ite, power <= max_pow; ++it) {
+            sum += (*it)*point_powered;
+            ++power;
+            point_powered *= point;
         }
 
-        return Polynomial<T>(sum_coefs);        
+        return sum;
     }
 
 };
 
 template <typename T>
-std::ostream& operator<<(std::ostream& os, const Polynomial<T>& poly){
-    
+Polynomial<T> operator+(const Polynomial<T>& lhs, const Polynomial<T>& rhs) {
+    std::vector<T> sum_coefs;
+
+    size_t rhs_size = rhs.get_size();
+    size_t size = lhs.get_size(); 
+
+    size_t lower_size = (rhs_size > size) ? size : rhs_size;        
+
+    auto coefs1 = lhs.get_coef();
+    auto coefs2 = rhs.get_coef();
+
+    for (size_t i = 0; i < lower_size; ++i) {
+        sum_coefs.push_back(coefs1[i] + coefs2[i]);
+    }
+
+    if(rhs_size == lower_size) {
+        for(size_t i = 0; i < size - lower_size; ++i) {
+            sum_coefs.push_back(coefs1[i + lower_size]);
+        }
+    }
+    else {
+         for(size_t i = 0; i < size - lower_size; ++i) {
+            sum_coefs.push_back(coefs2[i + lower_size]);
+        }       
+    }
+
+    return Polynomial<T>(sum_coefs);        
+}
+
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const Polynomial<T>& poly) {
     size_t max_pow = poly.get_size();
-    size_t curr_pow = max_pow;
-    for (auto&& coef : poly.get_coefs()) {
-        if(curr_pow != max_pow)
-            os << "+ ";
-        os << coef << "*x^" << curr_pow-1 << " ";
+    size_t curr_pow = max_pow-1;
+
+    auto coefs = poly.get_coefs();
+    auto rbegin = coefs.rbegin();
+    auto rit = rbegin;
+    auto rite = coefs.rend();
+
+    for (; rit != rite; ++rit) {
+        if(rit != rbegin && curr_pow != 0)
+            os << " + " << *rit << "x^" << curr_pow;
+        else if(rit == rbegin && curr_pow != 0)
+            os << *rit << "x^" << curr_pow;
+        else 
+            os << " + " << *rit;
+
         --curr_pow;
     }   
 
