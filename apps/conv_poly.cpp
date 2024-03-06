@@ -1,7 +1,9 @@
 #include <vector>
 #include <iostream>
-#include "poly/poly.hpp"
 #include <complex>
+
+#include "poly/poly.hpp"
+#include "fft_lib/fft.hpp"
 
 using namespace math::poly;
 
@@ -17,6 +19,10 @@ int main() {
     poly3.Dump();
 
     std::cout << "poly3(2) = " <<  poly3(std::complex<double>(2, 0)) << std::endl;
+    
+    auto coefs = poly3.get_coef();
+    
+    fft(coefs);
 
     return 0;
 }
