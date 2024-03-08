@@ -78,17 +78,10 @@ public:
 
 template <typename T>
 void pad_to_closest_power_of_2(Polynomial<T> &lhs, Polynomial<T> &rhs) {
-  if (lhs.get_size() > rhs.get_size()) {
-    lhs.pad_to_size(
-        std::pow(2, std::ceil(std::log(lhs.get_size()) / std::log(2))));
-    rhs.pad_to_size(
-        std::pow(2, std::ceil(std::log(lhs.get_size()) / std::log(2))));
-  } else {
-    lhs.pad_to_size(
-        std::pow(2, std::ceil(std::log(rhs.get_size()) / std::log(2))));
-    rhs.pad_to_size(
-        std::pow(2, std::ceil(std::log(rhs.get_size()) / std::log(2))));
-  }
+  size_t size = lhs.get_size() + rhs.get_size();
+
+  lhs.pad_to_size(std::pow(2, std::ceil(std::log(size) / std::log(2))));
+  rhs.pad_to_size(std::pow(2, std::ceil(std::log(size) / std::log(2))));
 }
 
 template <typename T>
@@ -126,18 +119,20 @@ Polynomial<T> operator*(const Polynomial<T> &lhs, const Polynomial<T> &rhs) {
   auto rhs_copy = rhs;
   pad_to_closest_power_of_2<T>(lhs_copy, rhs_copy);
 
+  for (auto &&x : lhs_copy.get_coef()) {
+    std::cout << x << std::endl;
+  }
+
   auto lhs_fft = fft::fft<T>(lhs_copy.get_coef());
   auto rhs_fft = fft::fft<T>(rhs_copy.get_coef());
 
   std::vector<T> mul_fft;
-
   auto itlhs = lhs_fft.begin();
   auto itrhs = rhs_fft.begin();
   auto itlhse = lhs_fft.end();
   for (; itlhs != itlhse; ++itlhs, ++itrhs) {
     mul_fft.push_back((*itlhs) * (*itrhs));
   }
-
   auto mul = fft::ifft(mul_fft);
 
   return Polynomial<T>(mul);

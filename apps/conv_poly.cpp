@@ -14,22 +14,11 @@ int main() {
 
   auto poly3 = poly1 + poly2;
 
-  poly3.Dump();
-  std::cout << std::endl;
-
-  std::cout << "poly3(2) = " << poly3(std::complex<double>(2, 0)) << std::endl;
-
   auto coefs = poly3.get_coef();
 
   auto poly_mul = poly1 * poly2;
 
-  std::cout << "(";
-  poly1.Dump();
-  std::cout << ") * (";
-  poly2.Dump();
-  std::cout << ") = ";
-  poly_mul.Dump();
-  std::cout << std::endl;
+  std::cout << poly_mul << std::endl;
 
   return 0;
 }
